@@ -19,7 +19,7 @@ class Entry():
     def __init__(self, row):
         self.data = {}
         self.wl_cols = HEADERS
-        for key, value in row.iteritems():
+        for key, value in row.items():
             if key in self.wl_cols:
                 self.data[key] = value
 
@@ -39,12 +39,20 @@ class Driver():
     def scrape_term(self, term : str):
         self.driver.get(f"https://ankiweb.net/shared/decks/{term}")
 
-        table = WebDriverWait(self.driver, 20).until(EC.visibility_of_element_located((By.XPATH, '(//table)'))).get_attribute("outerHTML")
-        df1 = pd.read_html(table)[0]
+        try:
+            table = WebDriverWait(self.driver, 1).until(EC.visibility_of_element_located((By.XPATH, '(//table)'))).get_attribute("outerHTML")
+        except:
+            return
 
-        for entry in list(filter(self.check_valid, [Entry(row) for _, row in df1.iterrows()])):
-            self.processed[entry.data["Title"]] = entry
-            print(entry)
+        try:
+            df1 = pd.read_html(table)[0]
+            count = 0
+            for entry in list(filter(self.check_valid, [Entry(row) for _, row in df1.iterrows()])):
+                self.processed[entry.data["Title"]] = entry
+                count += 1
+            print(f"Processed {count} results for term {term}.")
+        except:
+            print(f"Problem parsing results for term {term}")
     
     def check_valid(self, entry : Entry):
         """ 
@@ -65,9 +73,10 @@ class Driver():
         if len(self.processed) == 0:
             raise ValueError("No results processed!")
         
+        
         rows = [HEADERS]
 
-        for v in self.processed.values():
+        for v in sorted(self.processed.values(), key=lambda x: x.data["Ratings"]):
             rows.append([str(v.data[i]) for i in v.wl_cols])
 
         with open("decks.csv", "w") as f:

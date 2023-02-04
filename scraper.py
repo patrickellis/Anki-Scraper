@@ -17,8 +17,31 @@ def scrape(term = "biology"):
 
 
 if __name__ == "__main__":
-    # init_selenium_driver()
+    import random
+    from urllib.request import Request, urlopen
+
+
+    url="https://svnweb.freebsd.org/csrg/share/dict/words?revision=61569&view=co"
+    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+
+    web_byte = urlopen(req).read()
+
+    webpage = web_byte.decode('utf-8')
+    slice = webpage.split("\n")
+    random.shuffle(slice)
+    
     driver = Driver()
-    driver.scrape_term("biology")
-    driver.scrape_term("biology")
+    n = 10
+    while n > 0:
+        word = slice[n]
+        if len(word) < 3:
+            continue
+        n -= 1
+        print(f"Scraping word: {word}")
+        driver.scrape_term(word)
+    
     driver.dump_results()
+
+    
+        # r = requests.get('https://ankiweb.net/shared/decks/biology')
+        # print(r.text) # any difference to r.content?
